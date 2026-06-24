@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>our trip diary ✈️♡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fff5f5; /* soft cream blush background */
+            color: #4a3b32; /* warm dark brown text */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 30px 15px;
+        }
+
+        .wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 2.2rem;
+            color: #ff8fab; /* pretty pastel pink */
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: #a38f85;
+            margin-bottom: 35px;
+            font-style: italic;
+        }
+
+        /* --- Filter Controls --- */
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 35px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #ffffff;
+            color: #ff8fab;
+            border: 2px solid #ffe5ec;
+            padding: 8px 22px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn:hover, 
+        .btn.active {
+            background: #ff8fab;
+            color: #ffffff;
+            border-color: #ff8fab;
+            box-shadow: 0 4px 12px rgba(255, 143, 171, 0.3);
+        }
+
+        /* --- Gallery Grid Layout --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        /* The container holding the 3D flipping space */
+        .item {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            cursor: pointer;
+            perspective: 1000px; /* gives the 3D depth effect when spinning */
+        }
+
+        /* Essential filter fix to completely hide cards */
+        .item.hide {
+            display: none !important;
+        }
+
+        /* The actual box that rotates inside the item container */
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            border-radius: 16px;
+            border: 6px solid #ffffff; /* polaroid border style */
+            box-shadow: 0 6px 18px rgba(255, 182, 193, 0.3);
+        }
+
+        /* When hovering, spin the inner card container around */
+        .item:hover .flip-card-inner {
+            transform: rotateY(180deg);
+            box-shadow: 0 12px 24px rgba(255, 143, 171, 0.45);
+        }
+
+        /* Shared face setups for Front and Back sides */
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* hides the element when it's upside down */
+            backface-visibility: hidden;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .card-front img, .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Specific back face setup */
+        .card-back {
+            transform: rotateY(180deg); /* starts already turned around */
+        }
+
+        /* Cute caption overlays */
+        .caption-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(255, 143, 171, 0.9));
+            padding: 12px;
+        }
+
+        .caption-overlay p {
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* --- Lightbox Popup Overlay --- */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 21, 22, 0.94); /* warm tinted backdrop */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .lightbox.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox-box {
+            position: relative;
+            max-width: 85%;
+            max-height: 80vh;
+            text-align: center;
+        }
+
+        .lightbox-box img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 12px;
+            border: 6px solid #fff;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        .lightbox-title {
+            margin-top: 15px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        /* UI Control overlays */
+        .close-ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 42px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: color 0.2s;
+        }
+
+        .close-ui:hover {
+            color: #ff8fab;
+            opacity: 1;
+        }
+
+        .nav-ui {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .nav-ui:hover {
+            background: #ff8fab;
+            color: white;
+        }
+
+        .prev-ui { left: 20px; }
+        .next-ui { right: 20px; }
+
+        @media (max-width: 768px) {
+            .nav-ui { width: 38px; height: 38px; font-size: 16px; }
+            .prev-ui { left: 8px; }
+            .next-ui { right: 8px; }
+            .close-ui { top: 12px; right: 12px; font-size: 34px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>my visual memory space ✨</h1>
+        <div class="subtitle">hover any card to flip it around and see side b!</div>
+
+        <div class="filters">
+            <button class="btn active" data-target="all">All Memories</button>
+            <button class="btn" data-target="me">Just Me 💅</button>
+            <button class="btn" data-target="friends">With Besties 👯‍♀️</button>
+            <button class="btn" data-target="trip">Trip Pics ✈️</button>
+            <button class="btn" data-target="weird">Weird Pics 🤪</button>
+        </div>
+
+        <div class="grid">
+            
+            <div class="item" data-cat="me">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./mirrorpic.jpg">
+                        <div class="caption-overlay"><p>mirror pic 🌸</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./me.jpg">
+                        <div class="caption-overlay"><p>Another look ✨</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item" data-cat="me">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./sunset.jpg">
+                        <div class="caption-overlay"><p>Sunset portrait 🌅</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./atchurch.jpg">
+                        <div class="caption-overlay"><p>Candid smiles 😄</p></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="item" data-cat="friends">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./home.jpg">
+                        <div class="caption-overlay"><p>Home sweet Home ❤️</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./crew.jpg">
+                        <div class="caption-overlay"><p>Making memories ✨</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item" data-cat="friends">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./random.jpg">
+                        <div class="caption-overlay"><p>random  </p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./bestie.jpg">
+                        <div class="caption-overlay"><p>Lovely</p></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="item" data-cat="trip">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./tripfront.jpg ">
+                        <div class="caption-overlay"><p>Trip Day  ✈️</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./trip1.jpg ">
+                        <div class="caption-overlay"><p>We arrived! 🏖️</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item" data-cat="trip">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./thewholerew.jpg">
+                        <div class="caption-overlay"><p> Us 🚗</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./wcity.jpg">
+                        <div class="caption-overlay"><p>City runarounds 🏙️</p></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="item" data-cat="weird">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./weridface.jpg ">
+                        <div class="caption-overlay"><p>Weird faces 🤪</p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./nicepose.jpg">
+                        <div class="caption-overlay"><p>Total fail 😭</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item" data-cat="weird">
+                <div class="flip-card-inner">
+                    <div class="card-front">
+                        <img src="./theeye.jpg">
+                        <div class="caption-overlay"><p>Eyes </p></div>
+                    </div>
+                    <div class="card-back">
+                        <img src="./filter.jpg">
+                        <div class="caption-overlay"><p>The filter vibe </p></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="lightbox" id="galleryLightbox">
+        <button class="close-ui" id="closeBox">&times;</button>
+        <button class="nav-ui prev-ui" id="prevBox">&#10094;</button>
+        
+        <div class="lightbox-box">
+            <img src="" alt="" id="boxImg">
+            <div class="lightbox-title" id="boxTitle"></div>
+        </div>
+        
+        <button class="nav-ui next-ui" id="nextBox">&#10095;</button>
+    </div>
+
+    <script>
+        const items = document.querySelectorAll('.item');
+        const filterBtns = document.querySelectorAll('.btn');
+        const lightbox = document.getElementById('galleryLightbox');
+        const boxImg = document.getElementById('boxImg');
+        const boxTitle = document.getElementById('boxTitle');
+        
+        let activeIndex = 0;
+        let currentPool = [...items]; 
+
+        // filter sorting engine buttons
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.btn.active').classList.remove('active');
+                btn.classList.add('active');
+
+                const target = btn.dataset.target;
+
+                items.forEach(item => {
+                    if (target === 'all' || item.dataset.cat === target) {
+                        item.classList.remove('hide');
+                    } else {
+                        item.classList.add('hide');
+                    }
+                });
+
+                // dynamic array tracker for click sequences
+                currentPool = Array.from(items).filter(item => !item.classList.contains('hide'));
+            });
+        });
+
+        // inside lightbox rendering logic fixed
+        function updateLightbox(idx) {
+            if (idx < 0) idx = currentPool.length - 1;
+            if (idx >= currentPool.length) idx = 0;
+            
+            activeIndex = idx;
+            
+            // targets the front image specifically to display inside popup
+            const originalImg = currentPool[activeIndex].querySelector('.card-front img');
+            
+            boxImg.src = originalImg.src;
+            boxTitle.textContent = originalImg.alt;
+        }
+
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                const poolIndex = currentPool.indexOf(item);
+                if (poolIndex !== -1) {
+                    updateLightbox(poolIndex);
+                    lightbox.classList.add('open');
+                    document.body.style.overflow = 'hidden'; 
+                }
+            });
+        });
+
+        function closeLightbox() {
+            lightbox.classList.remove('open');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('closeBox').addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) closeLightbox();
+        });
+
+        document.getElementById('prevBox').addEventListener('click', () => updateLightbox(activeIndex - 1));
+        document.getElementById('nextBox').addEventListener('click', () => updateLightbox(activeIndex + 1));
+
+        // standard key combinations mapping
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') updateLightbox(activeIndex - 1);
+            if (e.key === 'ArrowRight') updateLightbox(activeIndex + 1);
+        });
+    </script>
+</body>
+</html>
